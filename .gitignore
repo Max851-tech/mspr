@@ -1,10 +1,7 @@
-# Datasets bruts (lourds)
-data/raw/*
-data/processed/*
+# Planning docs (local only)
+.planning/
 
-# Environnements
-.env
-*.log
+# Python
 __pycache__/
+*.py[cod]
 *.pyc
-postgres_data/
