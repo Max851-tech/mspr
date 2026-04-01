@@ -1,0 +1,421 @@
+@startuml healthai_MPD
+!theme plain
+title MPD - HealthAI Coach\n(Modèle Physique de Données - MySQL 8.0 / InnoDB)
+
+' Configuration
+skinparam linetype ortho
+skinparam roundcorner 3
+hide circle
+skinparam class {
+    BackgroundColor #FEFECE
+    BorderColor #A80036
+    ArrowColor #A80036
+    FontSize 10
+}
+
+' ===== TABLES PILOTAGE ETL =====
+
+class organisation {
+  <b>organisation_id</b> : INT AUTO_INCREMENT
+  --
+  nom : VARCHAR(150) NOT NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_organisation (organisation_id)
+  <i>UQ:</i> uq_organisation_nom (nom)
+  <i>ENGINE:</i> InnoDB
+}
+
+class utilisateur {
+  <b>utilisateur_id</b> : INT AUTO_INCREMENT
+  --
+  organisation_id : INT NOT NULL
+  nom_utilisateur : VARCHAR(120) NOT NULL
+  role : ENUM('ADMIN','UTILISATEUR') NOT NULL DEFAULT 'UTILISATEUR'
+  statut : ENUM('ACTIF','INACTIF') NOT NULL DEFAULT 'ACTIF'
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_utilisateur (utilisateur_id)
+  <i>FK:</i> fk_utilisateur_org → organisation(organisation_id)
+  <i>UQ:</i> uq_utilisateur_nom (nom_utilisateur)
+  <i>ON DELETE:</i> RESTRICT
+}
+
+class source_donnees {
+  <b>source_id</b> : INT AUTO_INCREMENT
+  --
+  nom : VARCHAR(200) NOT NULL
+  description : VARCHAR(500) NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_source_donnees (source_id)
+  <i>UQ:</i> uq_source_nom (nom)
+}
+
+class execution_etl {
+  <b>execution_id</b> : INT AUTO_INCREMENT
+  --
+  source_id : INT NOT NULL
+  statut : ENUM('EN_COURS','SUCCES','ECHEC') NOT NULL DEFAULT 'EN_COURS'
+  demarre_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  termine_le : DATETIME NULL
+  lignes_lues : INT NOT NULL DEFAULT 0
+  lignes_valides : INT NOT NULL DEFAULT 0
+  lignes_invalides : INT NOT NULL DEFAULT 0
+  message : VARCHAR(250) NULL
+  ==
+  <i>PK:</i> pk_execution_etl (execution_id)
+  <i>FK:</i> fk_execution_source → source_donnees(source_id)
+  <i>IDX:</i> idx_execution_source, idx_execution_statut
+  <i>ON DELETE:</i> RESTRICT
+}
+
+class lot_donnees {
+  <b>lot_id</b> : INT AUTO_INCREMENT
+  --
+  source_id : INT NOT NULL
+  nom_lot : VARCHAR(200) NOT NULL
+  statut : ENUM('TELEVERSE','VALIDE','NETTOYE','REJETE') NOT NULL DEFAULT 'TELEVERSE'
+  cree_par : INT NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_lot_donnees (lot_id)
+  <i>FK:</i> fk_lot_source → source_donnees(source_id) RESTRICT
+  <i>FK:</i> fk_lot_cree_par → utilisateur(utilisateur_id) SET NULL
+  <i>UQ:</i> uq_lot_nom_source (source_id, nom_lot)
+  <i>IDX:</i> idx_lot_source, idx_lot_statut
+}
+
+class anomalie_donnee {
+  <b>anomalie_id</b> : BIGINT AUTO_INCREMENT
+  --
+  execution_id : INT NOT NULL
+  severite : ENUM('AVERT','ERREUR') NOT NULL
+  entite : VARCHAR(80) NOT NULL
+  ref_ligne : VARCHAR(60) NULL
+  nom_champ : VARCHAR(120) NULL
+  code_anomalie : VARCHAR(80) NOT NULL
+  description : VARCHAR(250) NOT NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_anomalie_donnee (anomalie_id)
+  <i>FK:</i> fk_anomalie_execution → execution_etl(execution_id)
+  <i>IDX:</i> idx_anom_exec, idx_anom_sev
+  <i>ON DELETE:</i> CASCADE
+}
+
+class enregistrement_brut {
+  <b>enregistrement_id</b> : BIGINT AUTO_INCREMENT
+  --
+  lot_id : INT NOT NULL
+  entite : VARCHAR(80) NOT NULL
+  ref_externe : VARCHAR(120) NULL
+  payload : JSON NOT NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_enregistrement_brut (enregistrement_id)
+  <i>FK:</i> fk_raw_lot → lot_donnees(lot_id) CASCADE
+  <i>IDX:</i> idx_raw_lot, idx_raw_entite
+}
+
+' ===== TABLES STAGING =====
+
+class stg_alimentation {
+  <b>stg_id</b> : BIGINT AUTO_INCREMENT
+  --
+  lot_id : INT NOT NULL
+  food_item : VARCHAR(255) NULL
+  category : VARCHAR(120) NULL
+  calories_kcal : DECIMAL(10,2) NULL
+  protein_g : DECIMAL(10,2) NULL
+  carbohydrates_g : DECIMAL(10,2) NULL
+  fat_g : DECIMAL(10,2) NULL
+  fiber_g : DECIMAL(10,2) NULL
+  sugars_g : DECIMAL(10,2) NULL
+  sodium_mg : DECIMAL(10,2) NULL
+  cholesterol_mg : DECIMAL(10,2) NULL
+  meal_type : VARCHAR(60) NULL
+  water_intake_ml : DECIMAL(10,2) NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_stg_alimentation (stg_id)
+  <i>FK:</i> fk_stg_food_lot → lot_donnees(lot_id) CASCADE
+  <i>IDX:</i> idx_stg_food_lot
+}
+
+class stg_salle_sport {
+  <b>stg_id</b> : BIGINT AUTO_INCREMENT
+  --
+  lot_id : INT NOT NULL
+  age : INT NULL
+  gender : VARCHAR(20) NULL
+  weight_kg : DECIMAL(10,2) NULL
+  height_m : DECIMAL(10,2) NULL
+  max_bpm : INT NULL
+  avg_bpm : INT NULL
+  resting_bpm : INT NULL
+  session_duration_hours : DECIMAL(10,2) NULL
+  calories_burned : DECIMAL(10,2) NULL
+  workout_type : VARCHAR(80) NULL
+  fat_percentage : DECIMAL(10,2) NULL
+  water_intake_l : DECIMAL(10,2) NULL
+  workout_frequency_days_week : DECIMAL(10,2) NULL
+  experience_level : VARCHAR(50) NULL
+  bmi : DECIMAL(10,2) NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_stg_salle_sport (stg_id)
+  <i>FK:</i> fk_stg_gym_lot → lot_donnees(lot_id) CASCADE
+  <i>IDX:</i> idx_stg_gym_lot
+}
+
+class stg_sommeil_sante {
+  <b>stg_id</b> : BIGINT AUTO_INCREMENT
+  --
+  lot_id : INT NOT NULL
+  person_id : VARCHAR(60) NOT NULL
+  gender : VARCHAR(20) NULL
+  age : INT NULL
+  occupation : VARCHAR(120) NULL
+  sleep_duration : DECIMAL(10,2) NULL
+  quality_of_sleep : DECIMAL(10,2) NULL
+  physical_activity_level : DECIMAL(10,2) NULL
+  stress_level : DECIMAL(10,2) NULL
+  bmi_category : VARCHAR(60) NULL
+  blood_pressure : VARCHAR(40) NULL
+  heart_rate : INT NULL
+  daily_steps : INT NULL
+  sleep_disorder : VARCHAR(60) NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_stg_sommeil_sante (stg_id)
+  <i>FK:</i> fk_stg_sleep_lot → lot_donnees(lot_id) CASCADE
+  <i>IDX:</i> idx_stg_sleep_lot, idx_stg_sleep_person
+}
+
+' ===== TABLES MÉTIER =====
+
+class aliment {
+  <b>aliment_id</b> : INT AUTO_INCREMENT
+  --
+  nom : VARCHAR(255) NOT NULL
+  categorie : VARCHAR(120) NULL
+  calories_kcal : DECIMAL(10,2) NULL
+  proteines_g : DECIMAL(10,2) NULL
+  glucides_g : DECIMAL(10,2) NULL
+  lipides_g : DECIMAL(10,2) NULL
+  fibres_g : DECIMAL(10,2) NULL
+  sucres_g : DECIMAL(10,2) NULL
+  sodium_mg : DECIMAL(10,2) NULL
+  cholesterol_mg : DECIMAL(10,2) NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_aliment (aliment_id)
+  <i>UQ:</i> uq_aliment_nom (nom)
+}
+
+class exercice {
+  <b>exercice_id</b> : BIGINT AUTO_INCREMENT
+  --
+  external_id : VARCHAR(80) NULL
+  nom : VARCHAR(255) NULL
+  partie_corps : VARCHAR(80) NULL
+  muscle_cible : VARCHAR(80) NULL
+  equipement : VARCHAR(120) NULL
+  parties_corps_json : JSON NULL
+  muscles_secondaires_json : JSON NULL
+  equipements_json : JSON NULL
+  instructions_json : JSON NULL
+  gif_180_path : VARCHAR(255) NULL
+  gif_360_path : VARCHAR(255) NULL
+  gif_720_path : VARCHAR(255) NULL
+  gif_1080_path : VARCHAR(255) NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_exercice (exercice_id)
+  <i>UQ:</i> uq_exercice_external (external_id)
+  <i>IDX:</i> idx_exo_nom
+}
+
+class ref_type_entrainement {
+  <b>type_entrainement</b> : VARCHAR(80)
+  ==
+  <i>PK:</i> pk_ref_type_entrainement (type_entrainement)
+}
+
+class profil_utilisateur {
+  <b>utilisateur_id</b> : INT
+  --
+  genre : VARCHAR(20) NULL
+  age : INT NULL
+  taille_m : DECIMAL(10,2) NULL
+  poids_kg : DECIMAL(10,2) NULL
+  imc : DECIMAL(10,2) NULL
+  categorie_imc : VARCHAR(60) NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_profil_utilisateur (utilisateur_id)
+  <i>FK:</i> fk_profil_user → utilisateur(utilisateur_id) CASCADE
+}
+
+class objectif_utilisateur {
+  <b>objectif_id</b> : INT AUTO_INCREMENT
+  --
+  utilisateur_id : INT NOT NULL
+  date_debut : DATE NOT NULL
+  actif_unique : BOOLEAN NOT NULL DEFAULT TRUE
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_objectif_utilisateur (objectif_id)
+  <i>FK:</i> fk_objectif_user → utilisateur(utilisateur_id) CASCADE
+  <i>IDX:</i> idx_objectif_user_date, idx_objectif_user_active
+}
+
+class journal_alimentaire {
+  <b>journal_id</b> : BIGINT AUTO_INCREMENT
+  --
+  utilisateur_id : INT NOT NULL
+  consomme_le : DATETIME NOT NULL
+  type_repas : VARCHAR(30) NULL
+  aliment_id : INT NULL
+  aliment_nom_libre : VARCHAR(255) NULL
+  quantite : DECIMAL(10,2) NULL
+  unite_quantite : VARCHAR(30) NULL
+  calories_kcal : DECIMAL(10,2) NULL
+  eau_ml : DECIMAL(10,2) NULL
+  source_tag : VARCHAR(60) NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_journal_alimentaire (journal_id)
+  <i>FK:</i> fk_journal_user → utilisateur(utilisateur_id) CASCADE
+  <i>FK:</i> fk_journal_aliment → aliment(aliment_id) SET NULL
+  <i>IDX:</i> idx_journal_user_date
+}
+
+class mesure_biometrique {
+  <b>mesure_id</b> : BIGINT AUTO_INCREMENT
+  --
+  utilisateur_id : INT NOT NULL
+  mesure_le : DATETIME NOT NULL
+  poids_kg : DECIMAL(10,2) NULL
+  taille_m : DECIMAL(10,2) NULL
+  imc : DECIMAL(10,2) NULL
+  taux_masse_grasse : DECIMAL(10,2) NULL
+  bpm_repos : INT NULL
+  bpm_moyen : INT NULL
+  bpm_max : INT NULL
+  eau_l : DECIMAL(10,2) NULL
+  source_tag : VARCHAR(60) NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_mesure_biometrique (mesure_id)
+  <i>FK:</i> fk_mesure_user → utilisateur(utilisateur_id) CASCADE
+  <i>IDX:</i> idx_mesure_user_date
+}
+
+class seance_entrainement {
+  <b>seance_id</b> : BIGINT AUTO_INCREMENT
+  --
+  utilisateur_id : INT NOT NULL
+  date_seance : DATE NOT NULL
+  type_entrainement : VARCHAR(80) NOT NULL
+  duree_seance_h : DECIMAL(10,2) NULL
+  calories_brulees : DECIMAL(10,2) NULL
+  frequence_entrainement_j_sem : DECIMAL(10,2) NULL
+  niveau_experience : VARCHAR(50) NULL
+  eau_l : DECIMAL(10,2) NULL
+  source_tag : VARCHAR(60) NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_seance_entrainement (seance_id)
+  <i>FK:</i> fk_seance_user → utilisateur(utilisateur_id) CASCADE
+  <i>FK:</i> fk_seance_type → ref_type_entrainement(type_entrainement) RESTRICT
+  <i>IDX:</i> idx_seance_user_date
+}
+
+class instantane_sommeil_sante {
+  <b>instantane_id</b> : BIGINT AUTO_INCREMENT
+  --
+  utilisateur_id : INT NOT NULL
+  date_instantane : DATE NOT NULL
+  identifiant_personne_externe : VARCHAR(60) NULL
+  genre : VARCHAR(20) NULL
+  age : INT NULL
+  profession : VARCHAR(120) NULL
+  duree_sommeil_h : DECIMAL(10,2) NULL
+  qualite_sommeil_score : DECIMAL(10,2) NULL
+  activite_physique_min_jour : DECIMAL(10,2) NULL
+  stress_score : DECIMAL(10,2) NULL
+  categorie_imc : VARCHAR(60) NULL
+  tension_arterielle_brut : VARCHAR(40) NULL
+  frequence_cardiaque_bpm : INT NULL
+  pas_jour : INT NULL
+  trouble_sommeil : VARCHAR(30) NULL
+  source_tag : VARCHAR(60) NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_instantane_sommeil_sante (instantane_id)
+  <i>FK:</i> fk_sleep_user → utilisateur(utilisateur_id) CASCADE
+  <i>IDX:</i> idx_sleep_user_date
+}
+
+class progression_photo {
+  <b>photo_id</b> : BIGINT AUTO_INCREMENT
+  --
+  utilisateur_id : INT NOT NULL
+  objectif_id : INT NOT NULL
+  prise_le : DATETIME NOT NULL
+  cree_le : DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ==
+  <i>PK:</i> pk_progression_photo (photo_id)
+  <i>FK:</i> fk_photo_user → utilisateur(utilisateur_id) CASCADE
+  <i>FK:</i> fk_photo_objectif → objectif_utilisateur(objectif_id) CASCADE
+  <i>IDX:</i> idx_photo_objectif_date, idx_photo_user_date
+}
+
+' ===== RELATIONS =====
+
+organisation "1" <-- "*" utilisateur
+source_donnees "1" <-- "*" execution_etl
+source_donnees "1" <-- "*" lot_donnees
+utilisateur "1" <-- "*" lot_donnees
+execution_etl "1" <-- "*" anomalie_donnee
+lot_donnees "1" <-- "*" enregistrement_brut
+lot_donnees "1" <-- "*" stg_alimentation
+lot_donnees "1" <-- "*" stg_salle_sport
+lot_donnees "1" <-- "*" stg_sommeil_sante
+utilisateur "1" <-- "0..1" profil_utilisateur
+utilisateur "1" <-- "*" objectif_utilisateur
+utilisateur "1" <-- "*" journal_alimentaire
+utilisateur "1" <-- "*" mesure_biometrique
+utilisateur "1" <-- "*" seance_entrainement
+utilisateur "1" <-- "*" instantane_sommeil_sante
+utilisateur "1" <-- "*" progression_photo
+objectif_utilisateur "1" <-- "*" progression_photo
+aliment "0..1" <-- "*" journal_alimentaire
+ref_type_entrainement "1" <-- "*" seance_entrainement
+
+legend right
+  **MySQL 8.0 - InnoDB**
+  --
+  <b>Types de données:</b>
+  INT, BIGINT - Entiers
+  DECIMAL(10,2) - Décimaux précis
+  VARCHAR(n) - Chaînes variables
+  ENUM(...) - Valeurs énumérées
+  JSON - Documents JSON natifs
+  DATETIME - Date et heure
+  DATE - Date seule
+  --
+  <b>Contraintes:</b>
+  AUTO_INCREMENT - ID auto
+  NOT NULL - Obligatoire
+  DEFAULT - Valeur par défaut
+  UNIQUE - Unicité
+  CASCADE/RESTRICT/SET NULL - FK actions
+  --
+  <b>Total: 20 tables</b>
+  7 Pilotage + 3 Staging + 10 Métier
+endlegend
+
+@enduml

@@ -1,0 +1,7 @@
+# Planning docs (local only)
+.planning/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc

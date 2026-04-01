@@ -1,0 +1,23 @@
+illustre 11 OBJECTIF_UTILISATEUR, 0N PROGRESSION_PHOTO
+PROGRESSION_PHOTO: photo_id, prise_le
+realise 11 UTILISATEUR, 0N SEANCE_ENTRAINEMENT
+poursuit 11 UTILISATEUR, 0N OBJECTIF_UTILISATEUR
+OBJECTIF_UTILISATEUR: objectif_id, date_debut, actif_unique
+
+JOURNAL_ALIMENTAIRE: journal_id, consomme_le
+possede_photo 11 UTILISATEUR, 0N PROGRESSION_PHOTO
+SEANCE_ENTRAINEMENT: seance_id, date_seance, type_entrainement
+INSTANTANE_SOMMEIL_SANTE: instantane_id, date_instantane
+enregistre_sommeil 11 UTILISATEUR, 0N INSTANTANE_SOMMEIL_SANTE
+
+MESURE_BIOMETRIQUE: mesure_id, mesure_le
+enregistre_mesure 11 UTILISATEUR, 0N MESURE_BIOMETRIQUE
+:
+ALIMENT: aliment_id, nom, categorie, calories_kcal
+consomme 0N UTILISATEUR, 0N ALIMENT : JOURNAL_ALIMENTAIRE
+
+appartient_a 0N UTILISATEUR, 01 ORGANISATION
+ORGANISATION: organisation_id, nom
+UTILISATEUR: utilisateur_id, nom_utilisateur, organisation_id
+PROFIL_UTILISATEUR: utilisateur_id
+a_pour_profil 11 UTILISATEUR, 11 PROFIL_UTILISATEUR

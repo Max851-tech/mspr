@@ -1,0 +1,334 @@
+@startuml healthai_MLD
+!theme plain
+title MLD - HealthAI Coach\n(Modèle Logique de Données - Schéma Relationnel)
+
+' Configuration
+skinparam linetype ortho
+skinparam roundcorner 5
+hide circle
+skinparam class {
+    BackgroundColor #FEFECE
+    BorderColor #A80036
+    ArrowColor #A80036
+}
+
+' ===== TABLES PILOTAGE ETL =====
+
+class organisation << (T,#FF7700) Table >> {
+  <u>organisation_id</u> : INT <<PK>>
+  --
+  nom : VARCHAR(150) <<UNIQUE>>
+  cree_le : DATETIME
+}
+
+class utilisateur << (T,#FF7700) Table >> {
+  <u>utilisateur_id</u> : INT <<PK>>
+  --
+  #organisation_id : INT <<FK>>
+  nom_utilisateur : VARCHAR(120) <<UNIQUE>>
+  role : ENUM('ADMIN','UTILISATEUR')
+  statut : ENUM('ACTIF','INACTIF')
+  cree_le : DATETIME
+}
+
+class source_donnees << (T,#FF7700) Table >> {
+  <u>source_id</u> : INT <<PK>>
+  --
+  nom : VARCHAR(200) <<UNIQUE>>
+  description : VARCHAR(500)
+  cree_le : DATETIME
+}
+
+class execution_etl << (T,#FF7700) Table >> {
+  <u>execution_id</u> : INT <<PK>>
+  --
+  #source_id : INT <<FK>>
+  statut : ENUM('EN_COURS','SUCCES','ECHEC')
+  demarre_le : DATETIME
+  termine_le : DATETIME
+  lignes_lues : INT
+  lignes_valides : INT
+  lignes_invalides : INT
+  message : VARCHAR(250)
+}
+
+class lot_donnees << (T,#FF7700) Table >> {
+  <u>lot_id</u> : INT <<PK>>
+  --
+  #source_id : INT <<FK>>
+  #cree_par : INT <<FK>>
+  nom_lot : VARCHAR(200)
+  statut : ENUM
+  cree_le : DATETIME
+}
+
+class anomalie_donnee << (T,#FF7700) Table >> {
+  <u>anomalie_id</u> : BIGINT <<PK>>
+  --
+  #execution_id : INT <<FK>>
+  severite : ENUM('AVERT','ERREUR')
+  entite : VARCHAR(80)
+  ref_ligne : VARCHAR(60)
+  nom_champ : VARCHAR(120)
+  code_anomalie : VARCHAR(80)
+  description : VARCHAR(250)
+  cree_le : DATETIME
+}
+
+class enregistrement_brut << (T,#FF7700) Table >> {
+  <u>enregistrement_id</u> : BIGINT <<PK>>
+  --
+  #lot_id : INT <<FK>>
+  entite : VARCHAR(80)
+  ref_externe : VARCHAR(120)
+  payload : JSON
+  cree_le : DATETIME
+}
+
+' ===== TABLES STAGING =====
+
+class stg_alimentation << (S,#00AA00) Staging >> {
+  <u>stg_id</u> : BIGINT <<PK>>
+  --
+  #lot_id : INT <<FK>>
+  food_item : VARCHAR(255)
+  category : VARCHAR(120)
+  calories_kcal : DECIMAL(10,2)
+  protein_g : DECIMAL(10,2)
+  carbohydrates_g : DECIMAL(10,2)
+  fat_g : DECIMAL(10,2)
+  fiber_g : DECIMAL(10,2)
+  sugars_g : DECIMAL(10,2)
+  sodium_mg : DECIMAL(10,2)
+  cholesterol_mg : DECIMAL(10,2)
+  meal_type : VARCHAR(60)
+  water_intake_ml : DECIMAL(10,2)
+  cree_le : DATETIME
+}
+
+class stg_salle_sport << (S,#00AA00) Staging >> {
+  <u>stg_id</u> : BIGINT <<PK>>
+  --
+  #lot_id : INT <<FK>>
+  age : INT
+  gender : VARCHAR(20)
+  weight_kg : DECIMAL(10,2)
+  height_m : DECIMAL(10,2)
+  max_bpm : INT
+  avg_bpm : INT
+  resting_bpm : INT
+  session_duration_hours : DECIMAL(10,2)
+  calories_burned : DECIMAL(10,2)
+  workout_type : VARCHAR(80)
+  fat_percentage : DECIMAL(10,2)
+  water_intake_l : DECIMAL(10,2)
+  workout_frequency_days_week : DECIMAL(10,2)
+  experience_level : VARCHAR(50)
+  bmi : DECIMAL(10,2)
+  cree_le : DATETIME
+}
+
+class stg_sommeil_sante << (S,#00AA00) Staging >> {
+  <u>stg_id</u> : BIGINT <<PK>>
+  --
+  #lot_id : INT <<FK>>
+  person_id : VARCHAR(60)
+  gender : VARCHAR(20)
+  age : INT
+  occupation : VARCHAR(120)
+  sleep_duration : DECIMAL(10,2)
+  quality_of_sleep : DECIMAL(10,2)
+  physical_activity_level : DECIMAL(10,2)
+  stress_level : DECIMAL(10,2)
+  bmi_category : VARCHAR(60)
+  blood_pressure : VARCHAR(40)
+  heart_rate : INT
+  daily_steps : INT
+  sleep_disorder : VARCHAR(60)
+  cree_le : DATETIME
+}
+
+' ===== TABLES MÉTIER =====
+
+class aliment << (M,#0077AA) Métier >> {
+  <u>aliment_id</u> : INT <<PK>>
+  --
+  nom : VARCHAR(255) <<UNIQUE>>
+  categorie : VARCHAR(120)
+  calories_kcal : DECIMAL(10,2)
+  proteines_g : DECIMAL(10,2)
+  glucides_g : DECIMAL(10,2)
+  lipides_g : DECIMAL(10,2)
+  fibres_g : DECIMAL(10,2)
+  sucres_g : DECIMAL(10,2)
+  sodium_mg : DECIMAL(10,2)
+  cholesterol_mg : DECIMAL(10,2)
+  cree_le : DATETIME
+}
+
+class exercice << (M,#0077AA) Métier >> {
+  <u>exercice_id</u> : BIGINT <<PK>>
+  --
+  external_id : VARCHAR(80) <<UNIQUE>>
+  nom : VARCHAR(255)
+  partie_corps : VARCHAR(80)
+  muscle_cible : VARCHAR(80)
+  equipement : VARCHAR(120)
+  parties_corps_json : JSON
+  muscles_secondaires_json : JSON
+  equipements_json : JSON
+  instructions_json : JSON
+  gif_180_path : VARCHAR(255)
+  gif_360_path : VARCHAR(255)
+  gif_720_path : VARCHAR(255)
+  gif_1080_path : VARCHAR(255)
+  cree_le : DATETIME
+}
+
+class ref_type_entrainement << (R,#AA00AA) Référence >> {
+  <u>type_entrainement</u> : VARCHAR(80) <<PK>>
+}
+
+class profil_utilisateur << (M,#0077AA) Métier >> {
+  <u>utilisateur_id</u> : INT <<PK, FK>>
+  --
+  genre : VARCHAR(20)
+  age : INT
+  taille_m : DECIMAL(10,2)
+  poids_kg : DECIMAL(10,2)
+  imc : DECIMAL(10,2)
+  categorie_imc : VARCHAR(60)
+  cree_le : DATETIME
+}
+
+class objectif_utilisateur << (M,#0077AA) Métier >> {
+  <u>objectif_id</u> : INT <<PK>>
+  --
+  #utilisateur_id : INT <<FK>>
+  date_debut : DATE
+  actif_unique : BOOLEAN
+  cree_le : DATETIME
+}
+
+class progression_photo << (M,#0077AA) Métier >> {
+  <u>photo_id</u> : BIGINT <<PK>>
+  --
+  #utilisateur_id : INT <<FK>>
+  #objectif_id : INT <<FK>>
+  prise_le : DATETIME
+  cree_le : DATETIME
+}
+
+class journal_alimentaire << (M,#0077AA) Métier >> {
+  <u>journal_id</u> : BIGINT <<PK>>
+  --
+  #utilisateur_id : INT <<FK>>
+  #aliment_id : INT <<FK>>
+  consomme_le : DATETIME
+  type_repas : VARCHAR(30)
+  aliment_nom_libre : VARCHAR(255)
+  quantite : DECIMAL(10,2)
+  unite_quantite : VARCHAR(30)
+  calories_kcal : DECIMAL(10,2)
+  eau_ml : DECIMAL(10,2)
+  source_tag : VARCHAR(60)
+  cree_le : DATETIME
+}
+
+class mesure_biometrique << (M,#0077AA) Métier >> {
+  <u>mesure_id</u> : BIGINT <<PK>>
+  --
+  #utilisateur_id : INT <<FK>>
+  mesure_le : DATETIME
+  poids_kg : DECIMAL(10,2)
+  taille_m : DECIMAL(10,2)
+  imc : DECIMAL(10,2)
+  taux_masse_grasse : DECIMAL(10,2)
+  bpm_repos : INT
+  bpm_moyen : INT
+  bpm_max : INT
+  eau_l : DECIMAL(10,2)
+  source_tag : VARCHAR(60)
+  cree_le : DATETIME
+}
+
+class seance_entrainement << (M,#0077AA) Métier >> {
+  <u>seance_id</u> : BIGINT <<PK>>
+  --
+  #utilisateur_id : INT <<FK>>
+  #type_entrainement : VARCHAR(80) <<FK>>
+  date_seance : DATE
+  duree_seance_h : DECIMAL(10,2)
+  calories_brulees : DECIMAL(10,2)
+  frequence_entrainement_j_sem : DECIMAL(10,2)
+  niveau_experience : VARCHAR(50)
+  eau_l : DECIMAL(10,2)
+  source_tag : VARCHAR(60)
+  cree_le : DATETIME
+}
+
+class instantane_sommeil_sante << (M,#0077AA) Métier >> {
+  <u>instantane_id</u> : BIGINT <<PK>>
+  --
+  #utilisateur_id : INT <<FK>>
+  date_instantane : DATE
+  identifiant_personne_externe : VARCHAR(60)
+  genre : VARCHAR(20)
+  age : INT
+  profession : VARCHAR(120)
+  duree_sommeil_h : DECIMAL(10,2)
+  qualite_sommeil_score : DECIMAL(10,2)
+  activite_physique_min_jour : DECIMAL(10,2)
+  stress_score : DECIMAL(10,2)
+  categorie_imc : VARCHAR(60)
+  tension_arterielle_brut : VARCHAR(40)
+  frequence_cardiaque_bpm : INT
+  pas_jour : INT
+  trouble_sommeil : VARCHAR(30)
+  source_tag : VARCHAR(60)
+  cree_le : DATETIME
+}
+
+' ===== RELATIONS (Foreign Keys) =====
+
+' Pilotage ETL
+organisation "1" <-- "*" utilisateur : organisation_id
+source_donnees "1" <-- "*" execution_etl : source_id
+source_donnees "1" <-- "*" lot_donnees : source_id
+utilisateur "1" <-- "*" lot_donnees : cree_par
+execution_etl "1" <-- "*" anomalie_donnee : execution_id
+lot_donnees "1" <-- "*" enregistrement_brut : lot_id
+
+' Staging
+lot_donnees "1" <-- "*" stg_alimentation : lot_id
+lot_donnees "1" <-- "*" stg_salle_sport : lot_id
+lot_donnees "1" <-- "*" stg_sommeil_sante : lot_id
+
+' Métier
+utilisateur "1" <-- "0..1" profil_utilisateur : utilisateur_id
+utilisateur "1" <-- "*" objectif_utilisateur : utilisateur_id
+utilisateur "1" <-- "*" journal_alimentaire : utilisateur_id
+utilisateur "1" <-- "*" mesure_biometrique : utilisateur_id
+utilisateur "1" <-- "*" seance_entrainement : utilisateur_id
+utilisateur "1" <-- "*" instantane_sommeil_sante : utilisateur_id
+utilisateur "1" <-- "*" progression_photo : utilisateur_id
+objectif_utilisateur "1" <-- "*" progression_photo : objectif_id
+aliment "0..1" <-- "*" journal_alimentaire : aliment_id
+ref_type_entrainement "1" <-- "*" seance_entrainement : type_entrainement
+
+legend right
+  **Légende**
+  --
+  <#FF7700> T - Table Pilotage ETL
+  <#00AA00> S - Table Staging
+  <#0077AA> M - Table Métier
+  <#AA00AA> R - Table Référence
+  --
+  <u>souligné</u> = Clé Primaire (PK)
+  # = Clé Étrangère (FK)
+  --
+  Total: 20 tables
+  (7 ETL + 3 Staging + 10 Métier)
+endlegend
+
+@enduml

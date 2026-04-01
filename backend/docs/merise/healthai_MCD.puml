@@ -1,0 +1,233 @@
+@startuml healthai_MCD
+!theme plain
+title MCD - HealthAI Coach\n(Modèle Conceptuel de Données - Notation Merise)
+
+' Configuration
+skinparam linetype ortho
+skinparam roundcorner 10
+skinparam entityBackgroundColor #FEFECE
+skinparam entityBorderColor #A80036
+skinparam class {
+    BackgroundColor #FEFECE
+    BorderColor #A80036
+    ArrowColor #A80036
+}
+
+' ===== ENTITÉS PILOTAGE ETL =====
+
+entity "ORGANISATION" as org {
+  * organisation_id : INT
+  --
+  nom : VARCHAR(150)
+  cree_le : DATETIME
+}
+
+entity "UTILISATEUR" as user {
+  * utilisateur_id : INT
+  --
+  nom_utilisateur : VARCHAR(120)
+  role : ENUM
+  statut : ENUM
+  cree_le : DATETIME
+}
+
+entity "SOURCE_DONNEES" as src {
+  * source_id : INT
+  --
+  nom : VARCHAR(200)
+  description : VARCHAR(500)
+  cree_le : DATETIME
+}
+
+entity "EXECUTION_ETL" as exec {
+  * execution_id : INT
+  --
+  statut : ENUM
+  demarre_le : DATETIME
+  termine_le : DATETIME
+  lignes_lues : INT
+  lignes_valides : INT
+  lignes_invalides : INT
+  message : VARCHAR(250)
+}
+
+entity "LOT_DONNEES" as lot {
+  * lot_id : INT
+  --
+  nom_lot : VARCHAR(200)
+  statut : ENUM
+  cree_le : DATETIME
+}
+
+entity "ANOMALIE_DONNEE" as anom {
+  * anomalie_id : BIGINT
+  --
+  severite : ENUM
+  entite : VARCHAR(80)
+  ref_ligne : VARCHAR(60)
+  nom_champ : VARCHAR(120)
+  code_anomalie : VARCHAR(80)
+  description : VARCHAR(250)
+  cree_le : DATETIME
+}
+
+' ===== ENTITÉS MÉTIER =====
+
+entity "ALIMENT" as food {
+  * aliment_id : INT
+  --
+  nom : VARCHAR(255)
+  categorie : VARCHAR(120)
+  calories_kcal : DECIMAL
+  proteines_g : DECIMAL
+  glucides_g : DECIMAL
+  lipides_g : DECIMAL
+  fibres_g : DECIMAL
+  sucres_g : DECIMAL
+  sodium_mg : DECIMAL
+  cholesterol_mg : DECIMAL
+  cree_le : DATETIME
+}
+
+entity "EXERCICE" as exo {
+  * exercice_id : BIGINT
+  --
+  external_id : VARCHAR(80)
+  nom : VARCHAR(255)
+  partie_corps : VARCHAR(80)
+  muscle_cible : VARCHAR(80)
+  equipement : VARCHAR(120)
+  instructions_json : JSON
+  gif_paths : VARCHAR(255)
+  cree_le : DATETIME
+}
+
+entity "REF_TYPE_ENTRAINEMENT" as reftype {
+  * type_entrainement : VARCHAR(80)
+}
+
+entity "PROFIL_UTILISATEUR" as profil {
+  * utilisateur_id : INT
+  --
+  genre : VARCHAR(20)
+  age : INT
+  taille_m : DECIMAL
+  poids_kg : DECIMAL
+  imc : DECIMAL
+  categorie_imc : VARCHAR(60)
+  cree_le : DATETIME
+}
+
+entity "OBJECTIF_UTILISATEUR" as goal {
+  * objectif_id : INT
+  --
+  date_debut : DATE
+  actif_unique : BOOLEAN
+  cree_le : DATETIME
+}
+
+entity "PROGRESSION_PHOTO" as photo {
+  * photo_id : BIGINT
+  --
+  prise_le : DATETIME
+  cree_le : DATETIME
+}
+
+entity "JOURNAL_ALIMENTAIRE" as journal {
+  * journal_id : BIGINT
+  --
+  consomme_le : DATETIME
+  type_repas : VARCHAR(30)
+  aliment_nom_libre : VARCHAR(255)
+  quantite : DECIMAL
+  unite_quantite : VARCHAR(30)
+  calories_kcal : DECIMAL
+  eau_ml : DECIMAL
+  source_tag : VARCHAR(60)
+  cree_le : DATETIME
+}
+
+entity "MESURE_BIOMETRIQUE" as mesure {
+  * mesure_id : BIGINT
+  --
+  mesure_le : DATETIME
+  poids_kg : DECIMAL
+  taille_m : DECIMAL
+  imc : DECIMAL
+  taux_masse_grasse : DECIMAL
+  bpm_repos : INT
+  bpm_moyen : INT
+  bpm_max : INT
+  eau_l : DECIMAL
+  source_tag : VARCHAR(60)
+  cree_le : DATETIME
+}
+
+entity "SEANCE_ENTRAINEMENT" as seance {
+  * seance_id : BIGINT
+  --
+  date_seance : DATE
+  duree_seance_h : DECIMAL
+  calories_brulees : DECIMAL
+  frequence_entrainement_j_sem : DECIMAL
+  niveau_experience : VARCHAR(50)
+  eau_l : DECIMAL
+  source_tag : VARCHAR(60)
+  cree_le : DATETIME
+}
+
+entity "INSTANTANE_SOMMEIL_SANTE" as sleep {
+  * instantane_id : BIGINT
+  --
+  date_instantane : DATE
+  identifiant_personne_externe : VARCHAR(60)
+  genre : VARCHAR(20)
+  age : INT
+  profession : VARCHAR(120)
+  duree_sommeil_h : DECIMAL
+  qualite_sommeil_score : DECIMAL
+  activite_physique_min_jour : DECIMAL
+  stress_score : DECIMAL
+  categorie_imc : VARCHAR(60)
+  tension_arterielle_brut : VARCHAR(40)
+  frequence_cardiaque_bpm : INT
+  pas_jour : INT
+  trouble_sommeil : VARCHAR(30)
+  source_tag : VARCHAR(60)
+  cree_le : DATETIME
+}
+
+' ===== ASSOCIATIONS (Notation Merise: cardinalités près des entités) =====
+
+' Pilotage ETL
+org "1,1" -- "0,n" user : appartient à
+src "1,1" -- "0,n" exec : déclenche
+src "1,1" -- "0,n" lot : contient
+exec "1,1" -- "0,n" anom : génère
+lot "0,1" -- "0,n" user : créé par
+
+' Métier - Relations utilisateur
+user "1,1" -- "0,1" profil : possède
+user "1,1" -- "0,n" goal : poursuit
+user "1,1" -- "0,n" journal : enregistre
+user "1,1" -- "0,n" mesure : effectue
+user "1,1" -- "0,n" seance : réalise
+user "1,1" -- "0,n" sleep : suivi
+user "1,1" -- "0,n" photo : possède_photo
+goal "1,1" -- "0,n" photo : illustre
+
+' Métier - Références
+food "0,1" -- "0,n" journal : référence
+reftype "1,1" -- "0,n" seance : catégorise
+
+note bottom of org
+  **Légende Cardinalités Merise**
+  (min,max) près de chaque entité
+  --
+  (0,1) : optionnel, max 1
+  (1,1) : obligatoire, exactement 1
+  (0,n) : optionnel, plusieurs
+  (1,n) : obligatoire, plusieurs
+end note
+
+@enduml
