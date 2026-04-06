@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies.database import get_db
+from app.dependencies.security import require_admin_api_key
 from app.exceptions.exercise import ExerciseAlreadyExists, ExerciseNotFound
 from app.models.exercice import Exercice
 from app.schemas.bulk import (
@@ -22,6 +23,7 @@ from app.services.validation import LenientValidator, Warning as ValidationWarni
 router = APIRouter(
     prefix="/api/v1/admin/exercises",
     tags=["admin-exercises"],
+    dependencies=[Depends(require_admin_api_key)],
     responses={
         404: {"description": "Exercise not found"},
         409: {"description": "Exercise already exists"},

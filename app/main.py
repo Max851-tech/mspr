@@ -1,10 +1,13 @@
 """FastAPI application entry point with OpenAPI configuration."""
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import users, foods, exercises
 from app.routers.admin import users as admin_users
 from app.routers.admin import foods as admin_foods
 from app.routers.admin import exercises as admin_exercises
+from app.config import get_settings
 
 # OpenAPI tag metadata for documentation
 tags_metadata = [
@@ -43,6 +46,23 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# --- Minimal security checks / config ---
+settings = get_settings()
+
+if settings.env == "production":
+    # Refuse obvious default secrets in production
+    if settings.secret_key in {"change-me", "ton-clé-secrète-ici-change-la", "dev"} or len(settings.secret_key) < 16:
+        raise RuntimeError("SECRET_KEY is not set or too weak for production")
+
+if settings.cors_allowed_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_allowed_origins,
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Include routers
 app.include_router(users.router)

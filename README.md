@@ -23,6 +23,18 @@ Backend API pour une plateforme de suivi de sante et fitness. Projet MSPR TPRE50
 - MySQL 8.0+
 - pip
 
+### Option Docker (recommande)
+
+Si tu as Docker Desktop, tu peux lancer l'API + MySQL sans rien installer localement :
+
+```bash
+docker compose up --build
+```
+
+Puis ouvre :
+- API : `http://localhost:8000`
+- Swagger : `http://localhost:8000/docs`
+
 ### Installation
 
 ```bash
@@ -54,7 +66,7 @@ alembic upgrade head
 ### Lancement
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --env-file .env
 ```
 
 L'API est accessible sur `http://localhost:8000`.

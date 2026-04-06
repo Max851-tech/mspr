@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies.database import get_db
+from app.dependencies.security import require_admin_api_key
 from app.exceptions.food import FoodAlreadyExists, FoodNotFound
 from app.models.aliment import Aliment
 from app.schemas.bulk import (
@@ -23,6 +24,7 @@ from app.services.validation import LenientValidator, Warning as ValidationWarni
 router = APIRouter(
     prefix="/api/v1/admin/foods",
     tags=["admin-foods"],
+    dependencies=[Depends(require_admin_api_key)],
     responses={
         404: {"description": "Food not found"},
         409: {"description": "Food already exists"},

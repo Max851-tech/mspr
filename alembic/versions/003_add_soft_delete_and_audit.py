@@ -38,7 +38,7 @@ def upgrade() -> None:
         sa.Column('table_name', mysql.VARCHAR(80), nullable=False),
         sa.Column('record_id', mysql.BIGINT(), nullable=False),
         sa.Column('action', mysql.VARCHAR(20), nullable=False),
-        sa.Column('changed_by', mysql.BIGINT(), nullable=True),
+        sa.Column('changed_by', mysql.INTEGER(), nullable=True),
         sa.Column('changed_at', mysql.DATETIME(fsp=6), nullable=False),
         sa.Column('old_values', mysql.JSON(), nullable=True),
         sa.Column('new_values', mysql.JSON(), nullable=True),

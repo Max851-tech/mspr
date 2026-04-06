@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.dependencies.database import get_db
 from app.dependencies.pagination import PaginationParams
+from app.dependencies.security import require_admin_api_key
 from app.exceptions.user import UserNotFound
 from app.models.profil_utilisateur import ProfilUtilisateur
 from app.models.utilisateur import Utilisateur
@@ -21,6 +22,7 @@ from app.schemas.user import UserRead
 router = APIRouter(
     prefix="/api/v1/admin/users",
     tags=["admin"],
+    dependencies=[Depends(require_admin_api_key)],
     responses={
         404: {"description": "User not found"},
     },
