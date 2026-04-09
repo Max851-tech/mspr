@@ -1,5 +1,6 @@
 """Alembic migration environment configuration for MySQL async."""
 import asyncio
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -35,6 +36,11 @@ config = context.config
 # Interpret the config file for Python logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
+# Allow overriding DB URL via env (keeps app & migrations aligned)
+_env_db_url = os.getenv("DATABASE_URL")
+if _env_db_url:
+    config.set_main_option("sqlalchemy.url", _env_db_url)
 
 # Target metadata from SQLAlchemy models
 target_metadata = Base.metadata

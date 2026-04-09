@@ -43,13 +43,11 @@ services:
     image: metabase/metabase:latest
     ports:
       - "3000:3000"
-    environment:
-      MB_DB_TYPE: mysql
-      MB_DB_DBNAME: healthai_coach
-      MB_DB_PORT: 3306
-      MB_DB_USER: root
-      MB_DB_PASS: password
-      MB_DB_HOST: mysql
+    volumes:
+      - metabase-data:/metabase-data
     depends_on:
       mysql:
         condition: service_healthy
+
+volumes:
+  metabase-data:
