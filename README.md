@@ -23,6 +23,33 @@ Backend API pour une plateforme de suivi de sante et fitness. Projet MSPR TPRE50
 - MySQL 8.0+
 - pip
 
+### Option Docker (recommande)
+
+Si tu as Docker Desktop, tu peux lancer l'API + MySQL sans rien installer localement :
+
+```bash
+docker compose up --build
+```
+
+Puis ouvre :
+- API : `http://localhost:8001`
+- Swagger : `http://localhost:8001/docs`
+
+### Docker: ETL (seed demo) + Dashboard
+
+Le compose inclut aussi :
+- un job **ETL/seed** (pour avoir des aliments/exercices de démo),
+- un dashboard **Metabase**.
+
+Lancer l'ETL/seed (à exécuter une fois) :
+
+```bash
+docker compose run --rm etl
+```
+
+Lancer Metabase (déjà inclus dans `docker compose up`) :
+- Metabase : `http://localhost:3000`
+
 ### Installation
 
 ```bash
