@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies.database import get_db
 from app.dependencies.pagination import PaginationParams
-from app.exceptions.user import EmailAlreadyExists, ProfileNotFound, UserNotFound
+from app.exceptions.user import ProfileNotFound, UserNotFound
 from app.models.objectif_utilisateur import ObjectifUtilisateur
 from app.models.profil_utilisateur import ProfilUtilisateur
 from app.models.progression_photo import ProgressionPhoto
@@ -27,6 +27,7 @@ from app.schemas.user import (
     UserRead,
     UserUpdate,
 )
+from app.services.account import create_user_account
 from app.services.tracking import TrackingService
 
 router = APIRouter(
@@ -54,24 +55,9 @@ async def create_user(
 
     - Check email uniqueness
     - Create user with email and nom_utilisateur
-    - Password hashing handled by auth service (Maxime)
+    - Store a bcrypt password hash
     """
-    # Check email uniqueness
-    existing = await db.execute(
-        select(Utilisateur).where(Utilisateur.email == user_data.email)
-    )
-    if existing.scalar_one_or_none():
-        raise EmailAlreadyExists(user_data.email)
-
-    # Create user (password hashing handled by auth service)
-    user = Utilisateur(
-        email=user_data.email,
-        nom_utilisateur=user_data.nom,
-        organisation_id=1,  # Default organisation for now
-    )
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
+    user = await create_user_account(db, user_data)
     return user
 
 

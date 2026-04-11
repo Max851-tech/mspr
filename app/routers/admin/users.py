@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.dependencies.admin_auth import require_admin_api_key
 from app.dependencies.database import get_db
 from app.dependencies.pagination import PaginationParams
 from app.exceptions.user import UserNotFound
@@ -21,6 +22,7 @@ from app.schemas.user import UserRead
 router = APIRouter(
     prefix="/api/v1/admin/users",
     tags=["admin"],
+    dependencies=[Depends(require_admin_api_key)],
     responses={
         404: {"description": "User not found"},
     },
