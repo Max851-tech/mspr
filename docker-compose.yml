@@ -1,41 +1,31 @@
+# API / ETL utilisent le MySQL XAMPP sur l’hôte (port 3306). Démarre MySQL dans XAMPP
+# avant `docker compose up --build`. Depuis un conteneur, l’hôte = host.docker.internal
+# (pas localhost). Si root a un mot de passe sous XAMPP, adapte DATABASE_URL ci-dessous
+# (ex. mysql+aiomysql://root:tonmotdepasse@host.docker.internal:3306/healthai_coach).
+#
+# Metabase : ajoute la source MySQL dans l’UI → hôte host.docker.internal, port 3306.
 services:
-  mysql:
-    image: mysql:8.0
-    command: --default-authentication-plugin=mysql_native_password
-    environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: healthai_coach
-    ports:
-      - "3306:3306"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ppassword"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-
   api:
     build: .
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      DATABASE_URL: mysql+aiomysql://root:password@mysql:3306/healthai_coach
+      DATABASE_URL: mysql+aiomysql://root@host.docker.internal:3306/healthai_coach
       ADMIN_API_KEY: dev-admin-key
       SECRET_KEY: dev-jwt-secret-change-me-please-32chars-minimum
       ENV: development
-      CORS_ALLOWED_ORIGINS: http://localhost:5173
+      CORS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174
     ports:
       - "8001:8000"
-    depends_on:
-      mysql:
-        condition: service_healthy
     command: >
       sh -c "python scripts/wait_for_db.py && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
   etl:
     build: .
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      DATABASE_URL: mysql+aiomysql://root:password@mysql:3306/healthai_coach
-    depends_on:
-      mysql:
-        condition: service_healthy
+      DATABASE_URL: mysql+aiomysql://root@host.docker.internal:3306/healthai_coach
     command: >
       sh -c "python scripts/wait_for_db.py && alembic upgrade head && python scripts/seed_demo_data.py"
     restart: "no"
@@ -46,9 +36,6 @@ services:
       - "3000:3000"
     volumes:
       - metabase-data:/metabase-data
-    depends_on:
-      mysql:
-        condition: service_healthy
 
 volumes:
   metabase-data:

@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Button, Card, Input, Label, PageHeader } from '../components/ui'
+import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { AuthModeToggle } from '../components/AuthModeToggle'
+import { Button, Card, Input, Label } from '../components/ui'
 import { api } from '../lib/api'
 import { formatApiError } from '../lib/formatApiError'
 import { setAccessToken } from '../lib/storage'
@@ -20,9 +21,12 @@ export function LoginPage() {
 
   return (
     <div>
-      <PageHeader title="Connexion" subtitle="JWT via /api/v1/auth/token (OAuth2 password)." />
+      <AuthModeToggle active="login" />
 
-      <Card className="max-w-xl">
+      <Card className="border-zinc-800 bg-zinc-900/30">
+        <h1 className="mb-1 text-xl font-semibold text-white">Connexion</h1>
+        <p className="mb-4 text-sm text-zinc-500">Email et mot de passe enregistrés (le mot de passe est vérifié côté serveur avec le hash stocké).</p>
+
         <form
           className="space-y-3"
           onSubmit={async (e) => {
@@ -42,7 +46,7 @@ export function LoginPage() {
               )
 
               setAccessToken(data.access_token)
-              navigate('/dashboard', { replace: true })
+              navigate('/bienvenue', { replace: true, state: { flow: 'login' } })
             } catch (err: unknown) {
               if (axios.isAxiosError(err) && err.response?.status === 401) {
                 setError('Email ou mot de passe incorrect.')
@@ -61,7 +65,13 @@ export function LoginPage() {
         >
           <div className="space-y-2">
             <Label>Email</Label>
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+            <Input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              type="email"
+              autoComplete="email"
+              required
+            />
           </div>
           <div className="space-y-2">
             <Label>Mot de passe</Label>
@@ -70,19 +80,15 @@ export function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
+              required
             />
           </div>
 
           {error ? <div className="text-sm text-red-300">{error}</div> : null}
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Connexion…' : 'Se connecter'}
-            </Button>
-            <Link to="/register" className="text-sm text-violet-400 hover:text-violet-300">
-              Créer un compte
-            </Link>
-          </div>
+          <Button type="submit" className="mt-2 w-full" disabled={loading}>
+            {loading ? 'Connexion…' : 'Se connecter'}
+          </Button>
         </form>
       </Card>
     </div>

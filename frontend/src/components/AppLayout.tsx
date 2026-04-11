@@ -50,10 +50,9 @@ export function AppLayout() {
             <div className="px-2 pb-2 pt-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
               Général
             </div>
+            <NavItem to="/bienvenue" label="Session" />
             <NavItem to="/dashboard" label="Dashboard" />
             <NavItem to="/settings" label="Settings" />
-            <NavItem to="/login" label="Login" />
-            <NavItem to="/register" label="Inscription" />
 
             <div className="px-2 pb-2 pt-4 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
               Public API

@@ -48,8 +48,9 @@ mysql -u root -p < scripts/schema.sql
 alembic upgrade head
 ```
 
-> La connexion par defaut est `mysql+aiomysql://root:password@localhost/healthai_coach`.
-> Modifier `app/database.py` pour adapter les identifiants.
+> La base cible par defaut est **XAMPP** (`localhost:3306`, souvent `root` sans mot de passe).
+> Configure `DATABASE_URL` dans `mspr/.env`. Les conteneurs `api` / `etl` du compose pointent vers
+> `host.docker.internal:3306` (meme instance XAMPP sur la machine hote).
 
 ### Lancement
 

@@ -1,6 +1,7 @@
 """Async database session factory for HealthAI Coach API."""
 import os
 from functools import lru_cache
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -8,9 +9,16 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncEngine
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+except ImportError:
+    pass
+
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "mysql+aiomysql://root:password@localhost/healthai_coach"
+    "mysql+aiomysql://root@localhost:3306/healthai_coach",
 )
 
 
