@@ -8,11 +8,10 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from app.dependencies.admin_auth import require_admin_api_key
-from app.dependencies.database import get_db
-from app.dependencies.pagination import PaginationParams
+from app.api.dependencies.admin_auth import require_admin_api_key
+from app.api.dependencies.database import get_db
+from app.api.dependencies.pagination import PaginationParams
 from app.exceptions.user import UserNotFound
 from app.models.profil_utilisateur import ProfilUtilisateur
 from app.models.utilisateur import Utilisateur
@@ -167,3 +166,4 @@ async def get_user_admin(
     if not user:
         raise UserNotFound(user_id)
     return user
+

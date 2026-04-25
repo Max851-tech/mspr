@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies.database import get_db
+from app.api.dependencies.database import get_db
 from app.exceptions.exercise import ExerciseNotFound
 from app.models.exercice import Exercice
 from app.schemas.common import FacetResponse, FacetValue, SearchResponse
@@ -182,3 +182,4 @@ async def get_exercise(
     if not exercise:
         raise ExerciseNotFound(exercise_id)
     return exercise
+

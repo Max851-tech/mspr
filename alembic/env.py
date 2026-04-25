@@ -2,16 +2,9 @@
 import asyncio
 import os
 from logging.config import fileConfig
-from pathlib import Path
 
 from sqlalchemy import pool
 
-try:
-    from dotenv import load_dotenv
-
-    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
-except ImportError:
-    pass
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 

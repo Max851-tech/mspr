@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies.database import get_db
+from app.api.dependencies.database import get_db
 from app.exceptions.food import FoodNotFound
 from app.models.aliment import Aliment
 from app.schemas.common import FacetResponse, FacetValue, SearchResponse
@@ -132,3 +132,4 @@ async def get_food(
     if not food:
         raise FoodNotFound(food_id)
     return food
+

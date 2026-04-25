@@ -4,10 +4,10 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth, users, foods, exercises
-from app.routers.admin import users as admin_users
-from app.routers.admin import foods as admin_foods
-from app.routers.admin import exercises as admin_exercises
+from app.api.routes import auth, exercises, foods, users
+from app.api.routes.admin import exercises as admin_exercises
+from app.api.routes.admin import foods as admin_foods
+from app.api.routes.admin import users as admin_users
 
 # OpenAPI tag metadata for documentation
 tags_metadata = [

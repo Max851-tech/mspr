@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies.admin_auth import require_admin_api_key
-from app.dependencies.database import get_db
+from app.api.dependencies.admin_auth import require_admin_api_key
+from app.api.dependencies.database import get_db
 from app.exceptions.exercise import ExerciseAlreadyExists, ExerciseNotFound
 from app.models.exercice import Exercice
 from app.schemas.bulk import (
@@ -393,3 +393,4 @@ async def bulk_exercises(
         failed=failed,
         results=results,
     )
+

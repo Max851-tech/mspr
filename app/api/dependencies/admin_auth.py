@@ -24,3 +24,4 @@ async def require_admin_api_key(x_api_key: str | None = Header(default=None)) ->
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing admin API key",
         )
+

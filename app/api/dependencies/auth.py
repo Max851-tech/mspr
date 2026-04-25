@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies.database import get_db
+from app.api.dependencies.database import get_db
 from app.models.utilisateur import Utilisateur
 from app.security.tokens import decode_access_token
 
@@ -64,3 +64,4 @@ async def get_current_user(
             detail="User account is inactive",
         )
     return user
+

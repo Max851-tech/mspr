@@ -5,8 +5,8 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies.database import get_db
-from app.dependencies.pagination import PaginationParams
+from app.api.dependencies.database import get_db
+from app.api.dependencies.pagination import PaginationParams
 from app.exceptions.user import ProfileNotFound, UserNotFound
 from app.models.objectif_utilisateur import ObjectifUtilisateur
 from app.models.profil_utilisateur import ProfilUtilisateur
@@ -416,3 +416,4 @@ async def get_progress_photo(
     tracking_service = TrackingService(db)
     await tracking_service.ensure_user_exists(user_id)
     return await tracking_service.get_progress_photo(user_id, photo_id)
+

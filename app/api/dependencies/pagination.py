@@ -15,3 +15,4 @@ class PaginationParams:
         self.page = page
         self.limit = limit
         self.offset = (page - 1) * limit
+

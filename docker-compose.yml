@@ -1,41 +1,20 @@
-# API / ETL utilisent le MySQL XAMPP sur l’hôte (port 3306). Démarre MySQL dans XAMPP
-# avant `docker compose up --build`. Depuis un conteneur, l’hôte = host.docker.internal
-# (pas localhost). Si root a un mot de passe sous XAMPP, adapte DATABASE_URL ci-dessous
-# (ex. mysql+aiomysql://root:tonmotdepasse@host.docker.internal:3306/healthai_coach).
-#
-# Metabase : ajoute la source MySQL dans l’UI → hôte host.docker.internal, port 3306.
+# Dev rapide : 1 seul service (API) + base XAMPP sur l’hôte (3306).
+# Démarre MySQL dans XAMPP AVANT `docker compose up --build`.
+# Depuis un conteneur, l’hôte = host.docker.internal (pas localhost).
 services:
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      DATABASE_URL: mysql+aiomysql://root@host.docker.internal:3306/healthai_coach
-      ADMIN_API_KEY: dev-admin-key
+      DATABASE_URL: mysql+aiomysql://root@host.docker.internal:3306/healthai_coaching
       SECRET_KEY: dev-jwt-secret-change-me-please-32chars-minimum
-      ENV: development
       CORS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174
     ports:
       - "8001:8000"
-    command: >
-      sh -c "python scripts/wait_for_db.py && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
-
-  etl:
-    build: .
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    environment:
-      DATABASE_URL: mysql+aiomysql://root@host.docker.internal:3306/healthai_coach
-    command: >
-      sh -c "python scripts/wait_for_db.py && alembic upgrade head && python scripts/seed_demo_data.py"
-    restart: "no"
-
-  metabase:
-    image: metabase/metabase:latest
-    ports:
-      - "3000:3000"
     volumes:
-      - metabase-data:/metabase-data
-
-volumes:
-  metabase-data:
+      - ./:/app
+    command: >
+      sh -c "python scripts/wait_for_db.py && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
