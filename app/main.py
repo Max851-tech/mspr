@@ -1,19 +1,23 @@
 """FastAPI application entry point with OpenAPI configuration."""
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import users, foods, exercises
-from app.routers.admin import users as admin_users
-from app.routers.admin import foods as admin_foods
-from app.routers.admin import exercises as admin_exercises
-from app.config import get_settings
+from app.api.routes import auth, exercises, foods, users
+from app.api.routes.admin import exercises as admin_exercises
+from app.api.routes.admin import foods as admin_foods
+from app.api.routes.admin import users as admin_users
 
 # OpenAPI tag metadata for documentation
 tags_metadata = [
     {
         "name": "users",
         "description": "Operations with users. Create, read, update, delete user accounts and profiles.",
+    },
+    {
+        "name": "auth",
+        "description": "Authentication: login (JWT) and current user.",
     },
     {
         "name": "admin",
@@ -47,24 +51,27 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# --- Minimal security checks / config ---
-settings = get_settings()
+_origins = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
+if _origins:
+    _cors_origins = [o.strip() for o in _origins.split(",") if o.strip()]
+else:
+    _cors_origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+    ]
 
-if settings.env == "production":
-    # Refuse obvious default secrets in production
-    if settings.secret_key in {"change-me", "ton-clé-secrète-ici-change-la", "dev"} or len(settings.secret_key) < 16:
-        raise RuntimeError("SECRET_KEY is not set or too weak for production")
-
-if settings.cors_allowed_origins:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_allowed_origins,
-        allow_credentials=False,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Include routers
+app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(admin_users.router)
 app.include_router(foods.router)

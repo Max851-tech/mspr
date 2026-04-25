@@ -1,28 +1,20 @@
+# Dev rapide : 1 seul service (API) + base XAMPP sur l’hôte (3306).
+# Démarre MySQL dans XAMPP AVANT `docker compose up --build`.
+# Depuis un conteneur, l’hôte = host.docker.internal (pas localhost).
 services:
-  mysql:
-    image: mysql:8.0
-    command: --default-authentication-plugin=mysql_native_password
-    environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: healthai_coach
-    ports:
-      - "3306:3306"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ppassword"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      DATABASE_URL: mysql+aiomysql://root:password@mysql:3306/healthai_coach
-      ADMIN_API_KEY: dev-admin-key
-      ENV: development
+      DATABASE_URL: mysql+aiomysql://root@host.docker.internal:3306/healthai_coaching
+      SECRET_KEY: dev-jwt-secret-change-me-please-32chars-minimum
+      CORS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174
     ports:
       - "8001:8000"
-    depends_on:
-      mysql:
-        condition: service_healthy
+    volumes:
+      - ./:/app
     command: >
-      sh -c "python scripts/wait_for_db.py && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+      sh -c "python scripts/wait_for_db.py && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"

@@ -21,3 +21,6 @@ class AppRoutesTestCase(unittest.TestCase):
         self.assertIn("/api/v1/users/{user_id}/objectives/{objective_id}", route_paths)
         self.assertIn("/api/v1/users/{user_id}/progress-photos", route_paths)
         self.assertIn("/api/v1/users/{user_id}/progress-photos/{photo_id}", route_paths)
+        self.assertIn("/api/v1/auth/token", route_paths)
+        self.assertIn("/api/v1/auth/me", route_paths)
+        self.assertIn("/api/v1/auth/register", route_paths)
