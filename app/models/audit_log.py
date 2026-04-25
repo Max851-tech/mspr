@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import JSON, BigInteger, ForeignKey, String
+from sqlalchemy import JSON, BigInteger, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -36,9 +36,9 @@ class AuditLog(Base):
         nullable=False
     )
     changed_by: Mapped[Optional[int]] = mapped_column(
-        BigInteger,
+        Integer,
         ForeignKey("utilisateur.utilisateur_id", ondelete="SET NULL"),
-        nullable=True
+        nullable=True,
     )
     changed_at: Mapped[datetime] = mapped_column(
         nullable=False,

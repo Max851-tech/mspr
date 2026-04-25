@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "mysql+aiomysql://root:password@localhost/healthai_coach"
+    "mysql+aiomysql://root@localhost:3306/healthai_coach",
 )
 
 

@@ -1,52 +1,33 @@
+"""Attendre que MySQL accepte des connexions (utilisé au démarrage Docker)."""
 import asyncio
 import os
 import sys
-from urllib.parse import urlparse
 
-import aiomysql
-
-
-def _parse_mysql_url(url: str):
-    parsed = urlparse(url)
-    if parsed.scheme not in {"mysql+aiomysql", "mysql"}:
-        raise ValueError(f"Unsupported DATABASE_URL scheme: {parsed.scheme}")
-    return {
-        "host": parsed.hostname or "localhost",
-        "port": parsed.port or 3306,
-        "user": parsed.username or "root",
-        "password": parsed.password or "",
-        "db": (parsed.path or "/").lstrip("/") or None,
-    }
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 
-async def _wait() -> int:
+async def main() -> None:
     url = os.getenv("DATABASE_URL")
     if not url:
         print("DATABASE_URL is not set", file=sys.stderr)
-        return 2
+        sys.exit(1)
 
-    cfg = _parse_mysql_url(url)
-    retries = int(os.getenv("DB_WAIT_RETRIES", "60"))
-    delay = float(os.getenv("DB_WAIT_DELAY_SECONDS", "1"))
-
-    for i in range(1, retries + 1):
+    for attempt in range(1, 61):
         try:
-            conn = await aiomysql.connect(
-                host=cfg["host"],
-                port=cfg["port"],
-                user=cfg["user"],
-                password=cfg["password"],
-                db=cfg["db"],
-            )
-            conn.close()
-            return 0
-        except Exception as e:
-            print(f"[wait_for_db] attempt {i}/{retries} failed: {e}", file=sys.stderr)
-            await asyncio.sleep(delay)
+            engine = create_async_engine(url, echo=False)
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+            await engine.dispose()
+            print("Database is reachable.")
+            return
+        except Exception as e:  # noqa: BLE001
+            print(f"Waiting for database... ({attempt}/60) {e!r}")
+            await asyncio.sleep(2)
 
-    return 1
+    print("Database did not become ready in time.", file=sys.stderr)
+    sys.exit(1)
 
 
 if __name__ == "__main__":
-    raise SystemExit(asyncio.run(_wait()))
-
+    asyncio.run(main())
